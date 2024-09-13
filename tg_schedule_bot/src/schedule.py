@@ -160,4 +160,4 @@ class Schedule:
 
 
 def is_week_even(day: datetime.date):
-    return bool(day.isocalendar().week % 2)
+    return not bool(day.isocalendar().week % 2)
