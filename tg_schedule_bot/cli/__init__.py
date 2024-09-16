@@ -11,6 +11,7 @@ from aiogram.enums import ParseMode
 
 from tg_schedule_bot.cli.bot import dp
 from tg_schedule_bot.cli.config import Config
+from tg_schedule_bot.cli.db import init as init_db
 from tg_schedule_bot.src.schedule import parse as parse_schedule, Schedule
 
 app = typer.Typer()
@@ -48,4 +49,5 @@ def bot(
 
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     bot_obj = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    asyncio.run(init_db())
     asyncio.run(dp.start_polling(bot_obj))

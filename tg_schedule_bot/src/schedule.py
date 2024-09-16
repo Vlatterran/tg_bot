@@ -121,14 +121,13 @@ async def parse(groups: list[str] | None):
 
 
 class Schedule:
-    def __init__(self, schedule: dict[str, dict[str, list[dict[str, str]]]]):
+    def __init__(self, schedule: dict[str, dict[str, dict[str, list[dict[str, str]]]]]):
         self.schedule = schedule
 
-
-    def lectures(self, day: str):
-        date_regex = r'(\b(0?[1-9]|[1-2][0-9]|3[0-1])[\.\\]([1][0-2]|0?[1-9])\b)'
-        if re.match(date_regex, day):
-            date = [*map(int, re.split(r'[.\\-]', day))]
+    def lectures(self, day: str, group):
+        date_regex = re.compile(r'(\b(0?[1-9]|[1-2][0-9]|3[0-1])[/.\\](1[0-2]|0?[1-9])\b)')
+        if date_regex.match(day):
+            date = [*map(int, re.split(r'[./\\-]', day))]
             requested_date = datetime.datetime(day=date[0], month=date[1], year=time.localtime().tm_year)
         else:
             requested_date = datetime.datetime.now()
@@ -142,8 +141,8 @@ class Schedule:
         try:
             week_day = dec_ru[requested_date.weekday()]
             week_type = 'Числитель' if is_week_even(requested_date) else 'Знаменатель'
-            requested_schedule: list[dict] = self.schedule[week_day][week_type] + \
-                                             self.schedule[week_day].get('Еженедельно', [])
+            requested_schedule: list[dict] = self.schedule[group][week_day][week_type] + \
+                                             self.schedule[group][week_day].get('Еженедельно', [])
             result = f'Расписание на {requested_date.strftime("%d.%m.%Y")} ' \
                      f'({week_day.lower()}/{week_type.lower()})'
             for i in sorted(requested_schedule, key=lambda line: line['Время занятий']):
