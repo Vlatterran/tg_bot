@@ -2,6 +2,7 @@ import datetime
 import logging
 import re
 import time
+from collections.abc import Iterable
 
 import httpx
 from bs4 import BeautifulSoup
@@ -42,7 +43,7 @@ shortens = {
 }
 
 
-async def parse(group: str):
+async def parse(groups: list[str] | None):
     async with httpx.AsyncClient() as client:
         response = await client.post('https://raspisanie.madi.ru/tplan/tasks/task3,7_fastview.php',
                                      data={'step_no': 1, 'task_id': 7})
@@ -53,7 +54,14 @@ async def parse(group: str):
                            soup.select('ul>li')))
         weekday = None
         schedule = {}
-        for group_id, group_name in filter(lambda kv: kv[1].lower() == group.lower(), _groups.items()):
+        requested_groups: Iterable[tuple[str, str]]
+        if groups is None:
+            requested_groups = _groups.items()
+        else:
+            groups = set(group.lower() for group in groups)
+            requested_groups = filter(lambda kv: kv[1].lower() in groups, _groups.items())
+        for group_id, group_name in requested_groups:
+            group_schedule = schedule.setdefault(group_name, {})
             response = await client.post('https://raspisanie.madi.ru/tplan/tasks/tableFiller.php',
                                          data={'tab': 7, 'gp_name': group_name, 'gp_id': group_id})
             logging.info(response.text)
@@ -67,7 +75,10 @@ async def parse(group: str):
                         weekday = raw.text
                     except KeyError:
                         break
-                    next(raws)
+                    try:
+                        next(raws)
+                    except StopIteration:
+                        break
                 else:
                     context = {'weekday': weekday, 'group': group_name}
                     line = {}
@@ -91,7 +102,7 @@ async def parse(group: str):
                                     t = cell.text
                                 line['Преподаватель'] = re.sub(r'\s{2,}', ' ', t)
                     try:
-                        day = schedule.setdefault(context['weekday'], {})
+                        day = group_schedule.setdefault(context['weekday'], {})
                         logging.info(context)
                         if '.' in context['frequency']:
                             f = context['frequency'].split('.')

@@ -22,11 +22,11 @@ class Format(str, Enum):
 
 @app.command()
 def parse(
-        group: str = typer.Option(...),
+        groups: list[str] | None = typer.Option(None),
         output: typer.FileTextWrite = typer.Option("schedule.json", encoding="utf8"),
         schedule_format: Format = typer.Option(default=Format.JSON),
 ):
-    a = asyncio.run(parse_schedule(group))
+    a = asyncio.run(parse_schedule(groups))
     match schedule_format:
         case Format.JSON:
             json.dump(a, output, indent=4, ensure_ascii=False)
